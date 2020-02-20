@@ -1,0 +1,25 @@
+{
+  "name": "etl-rs-update",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "author": "",
+  "license": "GPL-3.0-or-later",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^13.5.2",
+    "@types/request": "^2.48.4",
+    "dotenv": "^8.2.0",
+    "typescript": "^3.7.5"
+  },
+  "dependencies": {
+    "knex": "^0.20.8",
+    "pg": "^7.18.1",
+    "request": "^2.88.0",
+    "saxes": "^4.0.2",
+    "saxes-stream": "^1.0.0"
+  }
+}

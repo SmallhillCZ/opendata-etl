@@ -1,0 +1,27 @@
+{
+  "name": "data04-etl-cedr-update",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node .",
+    "build": "tsc"
+  },
+  "private": true,
+  "author": "",
+  "dependencies": {
+    "change-case": "^3.1.0",
+    "csv-parse": "^4.8.3",
+    "fs-extra": "^8.1.0",
+    "knex": "^0.20.7",
+    "pg": "^7.17.0",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.8"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^8.0.1",
+    "@types/request": "^2.48.4",
+    "@types/request-promise-native": "^1.0.17",
+    "typescript": "^3.7.4"
+  }
+}
