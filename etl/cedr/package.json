@@ -1,33 +1,26 @@
 {
-  "name": "etl-monitor-update",
+  "name": "@otevrena-data-mfcr/opendata-etl-cedr",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "start": "node .",
-    "build": "tsc",
-    "codelists": "node dist/codelist-structure.js"
+    "build": "tsc"
   },
+  "private": true,
   "author": "",
-  "license": "ISC",
   "dependencies": {
-    "adm-zip": "^0.4.13",
-    "cheerio": "^1.0.0-rc.3",
+    "change-case": "^3.1.0",
     "csv-parse": "^4.8.3",
-    "download": "^7.1.0",
     "fs-extra": "^8.1.0",
     "knex": "^0.20.7",
-    "node-stream-zip": "^1.8.2",
-    "node-xml-stream": "^1.0.2",
     "pg": "^7.17.0",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.8"
   },
   "devDependencies": {
-    "@types/adm-zip": "^0.4.32",
-    "@types/download": "^6.2.4",
     "@types/fs-extra": "^8.0.1",
-    "@types/node": "^12.12.24",
+    "@types/request": "^2.48.4",
     "@types/request-promise-native": "^1.0.17",
     "typescript": "^3.7.4"
   }

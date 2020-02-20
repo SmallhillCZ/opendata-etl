@@ -1,5 +1,5 @@
 {
-  "name": "etl-rs-update",
+  "name": "@otevrena-data-mfcr/opendata-etl-rs-update",
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
