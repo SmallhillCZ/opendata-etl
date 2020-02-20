@@ -1,3 +1,3 @@
-# Skript na načtení dat z Registru smluv
+# Stažení dat: Registr smluv
 
 TODO
