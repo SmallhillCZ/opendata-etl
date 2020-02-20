@@ -1,7 +1,5 @@
 # Skripty na stahování otevřených dat
 
-Skripty na stahování otevřených dat nejen Ministerstva financí
-
  - [Centrální registr dotací (IS CEDR III)](./cedr)
  - [Informační systém veřejných zakázek (ISVZ)](./isvz)
  - [MONITOR Státní pokladny](./monitor)
