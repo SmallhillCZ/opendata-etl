@@ -13,7 +13,7 @@
 
 TODO
 
-## Spuštění databáze
+## Spuštění databáze a stažení dat
 
 TODO
 
