@@ -9,10 +9,14 @@
 
 # Příklady
 
-## Nahrávání dat do stávající databáze
+## Stažení dat do stávající databáze
 
 TODO
 
-## Nahrávání dat do statistického softwaru
+## Spuštění databáze
+
+TODO
+
+## Stažení dat do statistického softwaru
 
 TODO
