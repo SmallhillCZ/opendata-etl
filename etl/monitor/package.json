@@ -29,6 +29,7 @@
     "@types/fs-extra": "^8.0.1",
     "@types/node": "^12.12.24",
     "@types/request-promise-native": "^1.0.17",
+    "dotenv": "^8.2.0",
     "typescript": "^3.7.4"
   }
 }

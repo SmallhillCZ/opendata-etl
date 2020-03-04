@@ -37,6 +37,13 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
     }
   }
 
+  if (importFiles.length) {
+    console.log(`Found ${importFiles.length} data files.`);
+  }
+  else {
+    throw new Error(`Found ${importFiles.length} data files.`);
+  }
+
   const tables = await db("pg_catalog.pg_tables")
     .select("tablename")
     .where({ "schemaname": "src_monitor" })

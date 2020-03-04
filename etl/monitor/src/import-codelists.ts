@@ -27,6 +27,13 @@ export async function ImportCodelists(options: { db: Knex, overwrite: boolean, d
     if (match) importFiles.push({ path: match![0], table: "c_" + match![1] });
   }
 
+  if (importFiles.length) {
+    console.log(`Found ${importFiles.length} codelist files.`);
+  }
+  else {
+    throw new Error(`Found ${importFiles.length} data files.`);
+  }
+
   const tables = await db("pg_catalog.pg_tables")
     .select("tablename")
     .where({ "schemaname": "src_monitor" })
