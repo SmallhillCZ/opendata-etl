@@ -6,10 +6,11 @@ import Knex from "knex";
 import parse from "csv-parse";
 import { Readable } from "stream";
 import { DatabaseWriter } from "./writer";
+import { MonitorDataset, EtlRecord } from "./schema";
 
-export async function ImportData(options: { db: Knex, overwrite: boolean, dry: boolean, tmpDir: string, hideProgress: boolean }) {
+export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: string, hideProgress: boolean }) {
 
-  const { db, overwrite, dry, tmpDir, hideProgress } = options;
+  const { db, dry, tmpDir, hideProgress } = options;
 
   const filePatterns = [
     /\/data\/(\d{4})_(\d{2})_Data_CSUIS_ROZV.zip/g,
@@ -24,18 +25,17 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
     "rozv2": "rozv"
   };
 
+
   /* FIND SOURCE FILES */
-  const html = await request.get("https://monitor.statnipokladna.cz/2019/zdrojova-data/transakcni-data");
+  const datasets: MonitorDataset[] = await request.get("https://monitor.statnipokladna.cz/api/transakcni-data?aktivni=true", { json: true });
 
   let importFiles: { name: string, year: number, month: number }[] = [];
 
-  let match: RegExpExecArray | null;
-
-  for (let filePattern of filePatterns) {
-    while (match = filePattern.exec(html)) {
-      if (match) importFiles.push({ name: match[0], year: Number(match[1]), month: Number(match[2]) });
-    }
-  }
+  importFiles = datasets
+    .map(dataset => dataset.dataExtracts)
+    .flat()
+    .filter(resource => resource.format === "CSV")
+    .map(resource => ({ name: resource.filenamePeriod, year: resource.year, month: resource.month }));
 
   if (importFiles.length) {
     console.log(`Found ${importFiles.length} data files.`);
@@ -49,14 +49,39 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
     .where({ "schemaname": "src_monitor" })
     .then((result: { tablename: string }[]) => result.map(row => row.tablename));
 
+  const etags = (await db<EtlRecord>("src_monitor.etl"))
+    .reduce((acc, cur) => (acc[cur.name] = cur.etag, acc), {} as { [file: string]: string });
+
+
   for (let file of importFiles) {
 
-    const filePath = "http://monitor.statnipokladna.cz" + file.name;
+    const filePath = "http://monitor.statnipokladna.cz/data/" + file.name;
 
     const year = { year: file.year, month: file.month };
 
-    console.log(`== File ${filePath} ==`);
+    console.log(`\n== File ${filePath} ==`);
     console.log(`Year: ${file.year}, Month: ${file.month}`);
+
+    console.log("Checking ETAG...");
+
+    try {
+      var head = await request.head(filePath);
+      var etag = head["etag"];
+
+      if (etags[file.name] === etag) {
+        console.log("Nothing changed.");
+        continue;
+      }
+      else {
+        console.log("New data!");
+      }
+    }
+    catch (err) {
+      if (err.statusCode === 404) console.log("Error: File not found.");
+      else console.log("Error: File could not be accessed.")
+      continue;
+    }
+
     console.log("Downloading...");
 
     await download(filePath, tmpDir);
@@ -77,6 +102,8 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
       console.log("Error opening zip file.", err);
       continue;
     }
+
+    const clearedTables: string[] = [];
 
     const csvFiles = Object.entries(zip.entries()).map(([name, entry]) => ({ name, entry }));
 
@@ -115,15 +142,6 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
         continue;
       }
 
-      // check if data present in the target table for the current year and month
-      const rowCount = await db(table).where(year).count().then(count => count[0].count);
-
-      // if data present and overwrite not allowed, skip this CSV
-      if (rowCount > 0 && !overwrite) {
-        console.log(`Table ${table} not empty for year ${year.year} and month ${year.month}. Skipping.`);
-        continue;
-      }
-
       // encapsulate to keep await/async flow
       try {
         await new Promise(async (resolve, reject) => {
@@ -139,6 +157,7 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
               column = column.toLowerCase(); // lowercase
 
               // ad hoc fixes
+              if (table === "src_monitor.finu103" && column === "zu_aktz") column = "zu_akzt"; // fix column typo
               if (table === "src_monitor.finsf03" && column === "zu_aktz") column = "zu_akzt"; // fix column typo
 
               return column;
@@ -152,8 +171,11 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
           writer.on('error', err => { throw err; });
 
           // clear current contents
-          console.log(`Clearing ${rowCount} rows in the table ${table}...`);
-          await writer.clear();
+          if (clearedTables.indexOf(table) === -1) {
+            console.log(`Clearing data in the table ${table} for year ${year.year} and month ${year.month}...`);
+            await writer.clear();
+            clearedTables.push(table);
+          }
 
           // import new data
           console.log(`Importing table ${table}...`);
@@ -175,12 +197,15 @@ export async function ImportData(options: { db: Knex, overwrite: boolean, dry: b
           });
 
         });
+
       }
       catch (err) {
         console.log("Failed to parse and import CSV", err);
         continue;
       }
     }
+
+    await db<EtlRecord>("src_monitor.etl").insert({ etag, ...file });
 
   }
 

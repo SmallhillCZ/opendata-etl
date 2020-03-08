@@ -20,9 +20,9 @@ import { dbConnect } from "./db";
   /* DATABASE CONNECTION */
   const db = await dbConnect();
 
-  await ImportCodelists({ db, overwrite, dry, tmpDir, hideProgress });
+  // await ImportCodelists({ db, overwrite, dry, tmpDir, hideProgress });
 
-  await ImportData({ db, overwrite, dry, tmpDir, hideProgress });
+  await ImportData({ db, dry, tmpDir, hideProgress });
 
   console.log("Finished. Disconnecting DB.");
 
