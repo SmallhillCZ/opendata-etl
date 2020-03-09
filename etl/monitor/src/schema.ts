@@ -9,6 +9,7 @@ export interface MonitorDataset {
   descriptionEN: string;
   structureFile: string;
   xsd: string;
+  xml: string;
   contactPoint: string;
   bureauCode: string;
   periodicity: string;
@@ -37,7 +38,5 @@ export interface MonitorResource {
 
 export interface EtlRecord {
   name: string;
-  year: number;
-  month: number;
   etag: string;
 }

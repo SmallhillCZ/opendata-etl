@@ -4,28 +4,18 @@ import { Writable } from "stream";
 import { DatabaseWriter } from "./writer";
 
 import Parser from "node-xml-stream";
+import { MonitorDataset, EtlRecord } from "./schema";
 
-export async function ImportCodelists(options: { db: Knex, overwrite: boolean, dry: boolean, tmpDir: string, hideProgress: boolean }) {
+export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir: string, hideProgress: boolean }) {
 
-  const { db, overwrite, dry, tmpDir, hideProgress } = options;
-
-  const filePattern = /\/data\/([^\.]+)\.xml/g;
-
-  const tableMapping = {
-    "rozv1": "rozv",
-    "rozv2": "rozv"
-  };
+  const { db, dry, tmpDir, hideProgress } = options;
 
   /* FIND SOURCE FILES */
-  const html = await request.get("http://monitor.statnipokladna.cz/2019/zdrojova-data/ciselniky");
+  const codelists: MonitorDataset[] = await request.get("https://monitor.statnipokladna.cz/api/ciselniky?aktivni=true", { json: true });
 
-  let importFiles: { path: string, table: string }[] = [];
+  let importFiles: string[] = [];
 
-  let match: RegExpExecArray | null;
-
-  while (match = filePattern.exec(html)) {
-    if (match) importFiles.push({ path: match![0], table: "c_" + match![1] });
-  }
+  importFiles = codelists.map(resource => resource.xml);
 
   if (importFiles.length) {
     console.log(`Found ${importFiles.length} codelist files.`);
@@ -39,14 +29,36 @@ export async function ImportCodelists(options: { db: Knex, overwrite: boolean, d
     .where({ "schemaname": "src_monitor" })
     .then((result: { tablename: string }[]) => result.map(row => row.tablename));
 
+  const etags = (await db<EtlRecord>("src_monitor.etl"))
+    .reduce((acc, cur) => (acc[cur.name] = cur.etag, acc), {} as { [file: string]: string });
+
+
   for (let file of importFiles) {
 
-    const filePath = "http://monitor.statnipokladna.cz" + file.path;
+    const filePath = "http://monitor.statnipokladna.cz/data/" + file;
 
-    const table = file.table;
-    const tableFull = "src_monitor." + file.table;
+    const table = "c_" + file.split(".")[0];
+    const tableFull = "src_monitor." + table;
 
     console.log(`== File ${filePath} ==`);
+
+    try {
+      var head = await request.head(filePath);
+      var etag = head["etag"];
+
+      if (etags[file] === etag) {
+        console.log("Nothing changed.");
+        continue;
+      }
+      else {
+        console.log("New data!");
+      }
+    }
+    catch (err) {
+      if (err.statusCode === 404) console.log("Error: File not found.");
+      else console.log("Error: File could not be accessed.")
+      continue;
+    }
 
     // check if corresponding table present in database
     if (tables.indexOf(table) === -1) {
@@ -56,12 +68,6 @@ export async function ImportCodelists(options: { db: Knex, overwrite: boolean, d
 
     // check if data present in the target table for the current year and month
     const rowCount = await db(tableFull).count().then(count => count[0].count);
-
-    // if data present and overwrite not allowed, skip this CSV
-    if (rowCount > 0 && !overwrite) {
-      console.log(`Table ${table} not empty. Skipping.`);
-      continue;
-    }
 
     const writer = new DatabaseWriter(tableFull, db, { dry, hideProgress });
     writer.on('error', err => { throw err; });
@@ -137,5 +143,14 @@ export async function ImportCodelists(options: { db: Knex, overwrite: boolean, d
 
     await new Promise((resolve, reject) => writer.end(resolve));
 
+    await db<EtlRecord>("src_monitor.etl").where({ name: file }).delete();
+    await db<EtlRecord>("src_monitor.etl").insert({ etag, name: file });
+
+  }
+
+  console.log("Performing ANALYZE on all tables...")
+
+  for (let table of tables) {
+    await db.raw("ANALYZE ?", db.raw("src_monitor." + table));
   }
 }

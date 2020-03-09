@@ -6,9 +6,7 @@ import { dbConnect } from "./db";
 
 (async function () {
 
-  const tmpDir = path.join(__dirname, "../tmp");
-
-  const overwrite = process.env["OVERWRITE"] ? !!JSON.parse(process.env["OVERWRITE"]) : false; // convert 0 and 1 to boolean
+  const tmpDir = path.join(__dirname, "../tmp");  
 
   const dry = process.env["DRY"] ? !!JSON.parse(process.env["DRY"]) : false; // convert 0 and 1 to boolean
 
@@ -20,12 +18,15 @@ import { dbConnect } from "./db";
   /* DATABASE CONNECTION */
   const db = await dbConnect();
 
-  // await ImportCodelists({ db, overwrite, dry, tmpDir, hideProgress });
+  await ImportCodelists({ db, dry, tmpDir, hideProgress });
 
   await ImportData({ db, dry, tmpDir, hideProgress });
 
-  console.log("Finished. Disconnecting DB.");
+  console.log("Finished. Disconnecting DB and purging TMP dir.");
 
+  await remove(tmpDir);
+  await ensureDir(tmpDir);
+  
   await db.destroy();
 
 })();

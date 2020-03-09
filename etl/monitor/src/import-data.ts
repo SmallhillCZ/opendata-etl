@@ -7,18 +7,11 @@ import parse from "csv-parse";
 import { Readable } from "stream";
 import { DatabaseWriter } from "./writer";
 import { MonitorDataset, EtlRecord } from "./schema";
+import { ParsedUrlQuery } from "querystring";
 
 export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: string, hideProgress: boolean }) {
 
   const { db, dry, tmpDir, hideProgress } = options;
-
-  const filePatterns = [
-    /\/data\/(\d{4})_(\d{2})_Data_CSUIS_ROZV.zip/g,
-    /\/data\/(\d{4})_(\d{2})_Data_CSUIS_FINM.zip/g,
-    /\/data\/(\d{4})_(\d{2})_Data_CSUIS_FINSF.zip/g,
-    /\/data\/(\d{4})_(\d{2})_Data_CSUIS_FINU.zip/g,
-    /\/data\/(\d{4})_(\d{2})_Data_CSUIS_MISRIS.zip/g
-  ];
 
   const tableMapping = {
     "rozv1": "rozv",
@@ -59,10 +52,7 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
 
     const year = { year: file.year, month: file.month };
 
-    console.log(`\n== File ${filePath} ==`);
-    console.log(`Year: ${file.year}, Month: ${file.month}`);
-
-    console.log("Checking ETAG...");
+    console.log(`\n== File ${filePath} (Year: ${file.year}, Month: ${file.month})`);
 
     try {
       var head = await request.head(filePath);
@@ -133,36 +123,44 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
       // manually skp errorneous files, issues reported to C42 and waiting for solution
       const manualSkip: boolean[] = [
         table === "src_monitor.finu102" && year.year === 2014 && year.month === 6, // bad header
-        (table === "src_monitor.rozv1" || table === "src_monitor.rozv2") && year.year === 2014 && year.month === 6, // bad header in file rozv2
-        (table === "src_monitor.rozv1" || table === "src_monitor.rozv2") && year.year === 2014 && year.month === 9, // bad header in file rozv2
-        (table === "src_monitor.rozv1" || table === "src_monitor.rozv2") && year.year === 2014 && year.month === 12 // bad header in file rozv2
+        table === "src_monitor.rozv" && year.year === 2014 && year.month === 6, // bad header in file rozv2
+        table === "src_monitor.rozv" && year.year === 2014 && year.month === 9, // bad header in file rozv2
+        table === "src_monitor.rozv" && year.year === 2014 && year.month === 12 // bad header in file rozv2
       ];
       if (manualSkip.some(item => item)) {
         console.log("Skipping manually defined errorneous file");
         continue;
       }
 
+      const csvOptions: parse.Options = {
+
+        delimiter: ";",
+
+        columns: header => header.map((column: string) => {
+
+          column = column.replace(/^.*:/, ""); // remove double headers
+          column = column.replace(/^\d+/, ""); // remove leading numbers
+          column = column.replace("/BIC/", ""); // remove leading numbers
+          column = column.toLowerCase(); // lowercase
+
+          // ad hoc fixes
+          if (table === "src_monitor.finu103" && column === "zu_aktz") column = "zu_akzt"; // fix column typo
+          if (table === "src_monitor.finsf03" && column === "zu_aktz") column = "zu_akzt"; // fix column typo
+
+          return column;
+        })
+
+      };
+      
+      // custom parsing rules for different files
+      if (file.name === "2010_12_Data_CSUIS_ROZV.zip") csvOptions.to_line = 2495919 - 1; // error thrown because last line has column count of 1
+
       // encapsulate to keep await/async flow
       try {
         await new Promise(async (resolve, reject) => {
 
           // initialize CSV parser stream, matching of CSV headers to table fields
-          const parser = parse({
-            delimiter: ";",
-            columns: header => header.map((column: string) => {
-
-              column = column.replace(/^.*:/, ""); // remove double headers
-              column = column.replace(/^\d+/, ""); // remove leading numbers
-              column = column.replace("/BIC/", ""); // remove leading numbers
-              column = column.toLowerCase(); // lowercase
-
-              // ad hoc fixes
-              if (table === "src_monitor.finu103" && column === "zu_aktz") column = "zu_akzt"; // fix column typo
-              if (table === "src_monitor.finsf03" && column === "zu_aktz") column = "zu_akzt"; // fix column typo
-
-              return column;
-            })
-          });
+          const parser = parse(csvOptions);
 
           parser.on('error', err => { throw err; });
 
@@ -178,7 +176,7 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
           }
 
           // import new data
-          console.log(`Importing table ${table}...`);
+          console.log(`Importing file ${csvFile.name} into table ${table} with year ${year.year} and month ${year.month}...`);
 
           // create stream from current zipped CSV entry
           zip.stream(csvFile.entry, (err: Error, csvStream: Readable) => {
@@ -205,7 +203,8 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
       }
     }
 
-    await db<EtlRecord>("src_monitor.etl").insert({ etag, ...file });
+    await db<EtlRecord>("src_monitor.etl").where({ name: file.name }).delete();
+    await db<EtlRecord>("src_monitor.etl").insert({ etag, name: file.name });
 
   }
 
