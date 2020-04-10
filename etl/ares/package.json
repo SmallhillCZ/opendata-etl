@@ -1,0 +1,25 @@
+{
+  "name": "@otevrena-data-mfcr/opendata-etl-ares",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/run.js"
+  },
+  "author": "",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@types/node": "^13.11.1",
+    "@types/tar-stream": "^2.1.0",
+    "@types/xml2js": "^0.4.5",
+    "nodemon": "^2.0.3",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "axios": "^0.19.2",
+    "knex": "^0.20.13",
+    "tar-stream": "^2.1.2",
+    "xml2js": "^0.4.23",
+    "zlib": "^1.0.5"
+  }
+}

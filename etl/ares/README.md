@@ -1,0 +1,3 @@
+# WORK IN PROGRESS...
+
+Tento skript ještě není hotový :(
