@@ -35,7 +35,7 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
 
   for (let file of importFiles) {
 
-    const filePath = "http://monitor.statnipokladna.cz/data/" + file;
+    const filePath = "http://monitor.statnipokladna.cz/data/xml/" + file;
 
     const table = "c_" + file.split(".")[0];
     const tableFull = "src_monitor." + table;
@@ -76,7 +76,7 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
     await writer.clear();
 
     let entries: any[] = [];
-    let entry: any = {};
+    let entry: { [key: string]: string | null } = {};
 
     let c = 0;
 
@@ -86,26 +86,38 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
     let parser: Writable = new Parser();
 
     parser.on('opentag', (name, attrs) => {
-      if (name === "Radek") {
-        process.stdout.write(`Parsing record #${entries.length + 1}...\r`);
+      if (name === "row") {
+        if (!options.hideProgress) process.stdout.write(`Parsing record #${entries.length + 1}...\r`);
         inEntry = true;
       }
       else if (inEntry) inEntryProperty = name;
     });
 
     parser.on('closetag', async name => {
-      if (name === "Radek") {
+      if (name === "row") {
 
-        if (table === "c_ucjed") entry.datumakt = null;
-        if (table === "c_ucjed" && entry["zrizovatel_ico"] === "Chybí") entry["zrizovatel_ico"] = null;
+        /* TABLE SPECIFIC ERRORS */
+        if (table === "c_ucjed") {
+          if (entry["zrizovatel_ico"] === "Chybí") entry["zrizovatel_ico"] = null;
+          if (entry["datumakt"]) {
+            entry["datumakt"] = entry["datumakt"] === "00000000" ? null : `${entry["datumakt"].substr(0, 4)}-${entry["datumakt"].substr(4, 2)}-${entry["datumakt"].substr(6, 2)}`;
+          }
+          if (entry["konecplat"]) {
+            entry["konecplat"] = entry["konecplat"] === "00000000" ? null : `${entry["konecplat"].substr(0, 4)}-${entry["konecplat"].substr(4, 2)}-${entry["konecplat"].substr(6, 2)}`;
+          }
+          if (entry["datumvzniku"]) {
+            entry["datumvzniku"] = entry["datumvzniku"] === "00000000" ? null : `${entry["datumvzniku"].substr(0, 4)}-${entry["datumvzniku"].substr(4, 2)}-${entry["datumvzniku"].substr(6, 2)}`;
+          }
+        }
 
+        /* FIX DATES IN ALL CODELISTS */
         const re_date = /^(\d{2})\-(\d{2})\-(\d{4})$/;
         Object.keys(entry).forEach(key => {
 
-          // fix dates          
-          const datematch = re_date.exec(entry[key]);
-
-          if (datematch) entry[key] = `${datematch[3]}-${datematch[2]}-${datematch[1]}`;
+          if (entry[key]) {
+            const datematch = re_date.exec(entry[key]!); // ! typescript doesnt see the if above
+            if (datematch) entry[key] = `${datematch[3]}-${datematch[2]}-${datematch[1]}`;
+          }
 
         })
 

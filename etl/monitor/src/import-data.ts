@@ -48,7 +48,7 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
 
   for (let file of importFiles) {
 
-    const filePath = "http://monitor.statnipokladna.cz/data/" + file.name;
+    const filePath = "http://monitor.statnipokladna.cz/data/extrakty/csv/" + file.name;
 
     const year = { year: file.year, month: file.month };
 
@@ -148,7 +148,9 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
           if (table === "src_monitor.finsf03" && column === "zu_aktz") column = "zu_akzt"; // fix column typo
 
           return column;
-        })
+        }),
+
+        skip_lines_with_error: true
 
       };
       
