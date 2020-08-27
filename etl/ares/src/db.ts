@@ -1,6 +1,6 @@
 import Knex from "knex";
 
-import { Config } from "./schema";
+import { Config } from "./schema/schema";
 
 export function connectDb(config: Config) {
   

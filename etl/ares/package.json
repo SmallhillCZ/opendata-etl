@@ -9,14 +9,20 @@
   "author": "",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
+    "@types/jsdom": "^16.2.1",
     "@types/node": "^13.11.1",
     "@types/tar-stream": "^2.1.0",
     "@types/xml2js": "^0.4.5",
+    "dotenv": "^8.2.0",
     "nodemon": "^2.0.3",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "xsd2ts": "^0.3.6"
   },
   "dependencies": {
     "axios": "^0.19.2",
+    "cheerio": "^1.0.0-rc.3",
+    "fast-xml-parser": "^3.16.0",
+    "jsdom": "^16.2.2",
     "knex": "^0.20.13",
     "pg": "^8.0.2",
     "tar-stream": "^2.1.2",

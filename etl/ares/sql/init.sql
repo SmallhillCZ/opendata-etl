@@ -1,5 +1,3 @@
-drop table if exists src_ares.vreo_subjekt;
-
 create table src_ares.vreo_subjekt(
   zdroj varchar not null,
   rejstrik varchar,
@@ -9,8 +7,6 @@ create table src_ares.vreo_subjekt(
   datum_vymazu date,
   sidlo json
 );
-
-drop table if exists src_ares.vreo_fosoba;
 
 create table src_ares.vreo_fosoba(
   id serial not null,
