@@ -12,6 +12,8 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
 
 (async function () {
 
+  var errors = false;
+
   /* CONFIG */
   const schema = process.env["DB_SCHEMA"] || "PUBLIC";
 
@@ -47,7 +49,7 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
 
   for (let dump of dumps) {
 
-    console.log("Dump:", dump.odkaz);
+    console.log("= Dump:", dump.odkaz);
 
     const dumpId = `${dump.rok}-${String(dump.mesic).padStart(2, "0")}`;
 
@@ -60,16 +62,26 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
 
     const dumpRecord: DumpRecord = { id_dumpu: dumpId, ...dump };
 
-    console.log("Deleting old data.");
+    console.log("Deleting old data...");
     await db<DumpRecord>(`${schema}.etl`).where({ id_dumpu: dumpId }).delete();
     await db<ContractRecord>(`${schema}.smlouva`).where({ "id_dumpu": dumpId }).delete();
     await db<CounterpartyRecord>(`${schema}.smluvni_strana`).where({ "id_dumpu": dumpId }).delete();
     await db<AttachmentRecord>(`${schema}.priloha`).where({ "id_dumpu": dumpId }).delete();
 
-    console.log("Writing index record.");
-    await db<DumpRecord>(`${schema}.etl`).insert(dumpRecord);
+    try {
+      console.log("Importing data...");
+      await importDump(db, schema, dumpRecord, { dry, hideProgress })
 
-    await importDump(db, schema, dumpRecord, { dry, hideProgress })
+      console.log("Writing etl log record...");
+      await db<DumpRecord>(`${schema}.etl`).insert(dumpRecord);
+    }
+    catch (err) {
+      console.log("Error:", err.message);
+      errors = true;
+    }
+
+
+
   }
 
   console.log("Running ANALYZE...");
@@ -80,6 +92,11 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
 
   await db.destroy();
   console.log("Disconnected from db.");
+
+  if (errors) {
+    console.log("Encountered errors, exiting with status 1");
+    process.exit(1);
+  }
 
 })();
 
@@ -112,12 +129,26 @@ async function importDump(db: Knex, schema: string, dump: DumpRecord, options: {
 
   const writer = new DatabaseWriter(db, schema, dump.id_dumpu, options);
 
+  let parseError: Error;
+
   return new Promise<void>((resolve, reject) => {
 
     const outputStream = httpStream.pipe(parser).pipe(dumpTransform).pipe(writer);
 
+    parser.on("error", (err: Error) => {
+      if (!parseError) {
+        parseError = err;
+        parser.unpipe(dumpTransform);
+        writer.end();
+      }
+    });
+
     writer.on("error", (err: Error) => reject(err));
-    writer.on("finish", () => resolve());
+    writer.on("finish", () => {
+      console.log("Write finished.");
+      if (parseError) reject(parseError);
+      else resolve();
+    });
   })
 }
 

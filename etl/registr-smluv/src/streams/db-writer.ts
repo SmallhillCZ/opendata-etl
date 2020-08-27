@@ -11,7 +11,7 @@ export interface DBRecords {
 
 export class DatabaseWriter extends Writable {
 
-  c = 0;
+  public c = 0;
 
   constructor(private db: Knex, private schema: string, private dumpId: string, private options: { dry: boolean, hideProgress: boolean }) {
 
