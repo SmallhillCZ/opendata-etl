@@ -16,7 +16,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "knex": "^0.20.13",
     "pg": "^8.0.2",
     "tar-stream": "^2.1.2",
