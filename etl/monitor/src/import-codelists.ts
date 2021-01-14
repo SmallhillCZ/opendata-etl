@@ -99,15 +99,15 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
         /* TABLE SPECIFIC ERRORS */
         if (table === "c_ucjed") {
           if (entry["zrizovatel_ico"] === "Chybí") entry["zrizovatel_ico"] = null;
-          if (entry["datumakt"]) {
-            entry["datumakt"] = entry["datumakt"] === "00000000" ? null : `${entry["datumakt"].substr(0, 4)}-${entry["datumakt"].substr(4, 2)}-${entry["datumakt"].substr(6, 2)}`;
-          }
-          if (entry["konecplat"]) {
-            entry["konecplat"] = entry["konecplat"] === "00000000" ? null : `${entry["konecplat"].substr(0, 4)}-${entry["konecplat"].substr(4, 2)}-${entry["konecplat"].substr(6, 2)}`;
-          }
-          if (entry["datumvzniku"]) {
-            entry["datumvzniku"] = entry["datumvzniku"] === "00000000" ? null : `${entry["datumvzniku"].substr(0, 4)}-${entry["datumvzniku"].substr(4, 2)}-${entry["datumvzniku"].substr(6, 2)}`;
-          }
+          // if (entry["datumakt"]) {
+          //   entry["datumakt"] = entry["datumakt"] === "00000000" ? null : `${entry["datumakt"].substr(0, 4)}-${entry["datumakt"].substr(4, 2)}-${entry["datumakt"].substr(6, 2)}`;
+          // }
+          // if (entry["konecplat"]) {
+          //   entry["konecplat"] = entry["konecplat"] === "00000000" ? null : `${entry["konecplat"].substr(0, 4)}-${entry["konecplat"].substr(4, 2)}-${entry["konecplat"].substr(6, 2)}`;
+          // }
+          // if (entry["datumvzniku"]) {
+          //   entry["datumvzniku"] = entry["datumvzniku"] === "00000000" ? null : `${entry["datumvzniku"].substr(0, 4)}-${entry["datumvzniku"].substr(4, 2)}-${entry["datumvzniku"].substr(6, 2)}`;
+          // }
         }
 
         /* FIX DATES IN ALL CODELISTS */
