@@ -4,9 +4,9 @@ import { SaxesStreamChunk } from "saxes-stream";
 
 
 export type DumpChunk =
-  { type: "smlouva", data: ContractData } |
-  { type: "smluvni_strana", data: CounterpartyData } |
-  { type: "priloha", data: AttachmentData };
+  { type: "smlouva", data: ContractData; } |
+  { type: "smluvni_strana", data: CounterpartyData; } |
+  { type: "priloha", data: AttachmentData; };
 
 
 export class DumpTransform extends Transform {
@@ -37,8 +37,11 @@ export class DumpTransform extends Transform {
 
   _transform(chunk: SaxesStreamChunk, encoding: string, callback: (err?: Error) => void) {
 
+    let chunkPath = chunk.path;
+    chunkPath = chunkPath.replace(/^\.daily/, ".dump");
+
     if (chunk.event === "text") {
-      switch (chunk.path) {
+      switch (chunkPath) {
         case ".dump.zaznam.identifikator.idSmlouvy": this.contract["id_smlouvy"] = Number(chunk.text); break;// number
         case ".dump.zaznam.identifikator.idVerze": this.contract["id_verze"] = Number(chunk.text); break;// number
 
@@ -82,7 +85,7 @@ export class DumpTransform extends Transform {
 
     if (chunk.event === "closetag") {
 
-      switch (chunk.path) {
+      switch (chunkPath) {
 
         case ".dump.zaznam":
 
@@ -92,12 +95,12 @@ export class DumpTransform extends Transform {
 
           this.counterparties.forEach(counterparty => {
             counterparty["id_verze"] = contract["id_verze"];
-            this.push({ type: "smluvni_strana", data: counterparty })
+            this.push({ type: "smluvni_strana", data: counterparty });
           });
 
           this.attachments.forEach(attachment => {
             attachment["id_verze"] = contract["id_verze"];
-            this.push({ type: "priloha", data: attachment })
+            this.push({ type: "priloha", data: attachment });
           });
 
           this.counterparties = [];
