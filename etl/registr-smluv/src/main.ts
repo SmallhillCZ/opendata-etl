@@ -28,7 +28,7 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
       user: process.env["DB_USER"],
       password: process.env["DB_PASSWORD"]
     }
-  }
+  };
   /* DATABASE */
   const db = Knex({
     client: process.env["DB_CLIENT"],
@@ -70,7 +70,7 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
 
     try {
       console.log("Importing data...");
-      await importDump(db, schema, dumpRecord, { dry, hideProgress })
+      await importDump(db, schema, dumpRecord, { dry, hideProgress });
 
       console.log("Writing etl log record...");
       await db<DumpRecord>(`${schema}.etl`).insert(dumpRecord);
@@ -85,10 +85,10 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
   }
 
   console.log("Running ANALYZE...");
-  await db.raw(`ANALYZE ${schema}.etl;`)
-  await db.raw(`ANALYZE ${schema}.smlouva;`)
-  await db.raw(`ANALYZE ${schema}.smluvni_strana;`)
-  await db.raw(`ANALYZE ${schema}.priloha;`)
+  await db.raw(`ANALYZE ${schema}.etl;`);
+  await db.raw(`ANALYZE ${schema}.smlouva;`);
+  await db.raw(`ANALYZE ${schema}.smluvni_strana;`);
+  await db.raw(`ANALYZE ${schema}.priloha;`);
 
   await db.destroy();
   console.log("Disconnected from db.");
@@ -116,10 +116,10 @@ async function getDumps() {
 
     outputStream.on("error", (err: Error) => reject(err));
     outputStream.on("end", () => resolve(dumps));
-  })
+  });
 }
 
-async function importDump(db: Knex, schema: string, dump: DumpRecord, options: { dry: boolean, hideProgress: boolean }) {
+async function importDump(db: Knex, schema: string, dump: DumpRecord, options: { dry: boolean, hideProgress: boolean; }) {
 
   const httpStream = request(dump.odkaz);
 
@@ -146,10 +146,11 @@ async function importDump(db: Knex, schema: string, dump: DumpRecord, options: {
     writer.on("error", (err: Error) => reject(err));
     writer.on("finish", () => {
       console.log("Write finished.");
+      if (!writer.c) reject(new Error("No records written."));
       if (parseError) reject(parseError);
       else resolve();
     });
-  })
+  });
 }
 
 
