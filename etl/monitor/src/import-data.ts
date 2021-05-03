@@ -15,7 +15,8 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
 
   const tableMapping = {
     "rozv1": "rozv",
-    "rozv2": "rozv"
+    "rozv2": "rozv",
+    "vykzz1": "vykzz"
   };
 
 
