@@ -1,15 +1,14 @@
-import request from "request-promise-native";
-import path from "path";
-import download from "download";
-import StreamZip from "node-stream-zip";
-import Knex from "knex";
 import parse from "csv-parse";
+import download from "download";
+import Knex from "knex";
+import StreamZip from "node-stream-zip";
+import path from "path";
+import request from "request-promise-native";
 import { Readable } from "stream";
+import { EtlRecord, MonitorDataset } from "./schema";
 import { DatabaseWriter } from "./writer";
-import { MonitorDataset, EtlRecord } from "./schema";
-import { ParsedUrlQuery } from "querystring";
 
-export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: string, hideProgress: boolean }) {
+export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: string, hideProgress: boolean; }) {
 
   const { db, dry, tmpDir, hideProgress } = options;
 
@@ -23,13 +22,13 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
   /* FIND SOURCE FILES */
   const datasets: MonitorDataset[] = await request.get("https://monitor.statnipokladna.cz/api/transakcni-data?aktivni=true", { json: true });
 
-  let importFiles: { name: string, year: number, month: number }[] = [];
+  let importFiles: { name: string, year: number, month: number, modified: string; }[] = [];
 
   importFiles = datasets
     .map(dataset => dataset.dataExtracts)
     .flat()
     .filter(resource => resource.format === "CSV")
-    .map(resource => ({ name: resource.filenamePeriod, year: resource.year, month: resource.month }));
+    .map(resource => ({ name: resource.filenamePeriod, year: resource.year, month: resource.month, modified: resource.modified }));
 
   if (importFiles.length) {
     console.log(`Found ${importFiles.length} data files.`);
@@ -41,10 +40,10 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
   const tables = await db("pg_catalog.pg_tables")
     .select("tablename")
     .where({ "schemaname": "src_monitor" })
-    .then((result: { tablename: string }[]) => result.map(row => row.tablename));
+    .then((result: { tablename: string; }[]) => result.map(row => row.tablename));
 
   const etags = (await db<EtlRecord>("src_monitor.etl"))
-    .reduce((acc, cur) => (acc[cur.name] = cur.etag, acc), {} as { [file: string]: string });
+    .reduce((acc, cur) => (acc[cur.name] = cur.etag, acc), {} as { [file: string]: string; });
 
 
   for (let file of importFiles) {
@@ -69,7 +68,7 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
     }
     catch (err) {
       if (err.statusCode === 404) console.log("Error: File not found.");
-      else console.log("Error: File could not be accessed.")
+      else console.log("Error: File could not be accessed.");
       continue;
     }
 
@@ -154,13 +153,13 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
         skip_lines_with_error: true
 
       };
-      
+
       // custom parsing rules for different files
       if (file.name === "2010_12_Data_CSUIS_ROZV.zip") csvOptions.to_line = 2495919 - 1; // error thrown because last line has column count of 1
 
       // encapsulate to keep await/async flow
       try {
-        await new Promise(async (resolve, reject) => {
+        await new Promise<void>(async (resolve, reject) => {
 
           // initialize CSV parser stream, matching of CSV headers to table fields
           const parser = parse(csvOptions);
@@ -207,11 +206,11 @@ export async function ImportData(options: { db: Knex, dry: boolean, tmpDir: stri
     }
 
     await db<EtlRecord>("src_monitor.etl").where({ name: file.name }).delete();
-    await db<EtlRecord>("src_monitor.etl").insert({ etag, name: file.name });
+    await db<EtlRecord>("src_monitor.etl").insert({ etag, name: file.name, modified: file.modified, timestamp: (new Date()).toISOString() });
 
   }
 
-  console.log("Performing ANALYZE on all tables...")
+  console.log("Performing ANALYZE on all tables...");
 
   for (let table of tables) {
     await db.raw("ANALYZE ?", db.raw("src_monitor." + table));

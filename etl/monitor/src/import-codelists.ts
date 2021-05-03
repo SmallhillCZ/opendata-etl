@@ -6,7 +6,7 @@ import { DatabaseWriter } from "./writer";
 import Parser from "node-xml-stream";
 import { MonitorDataset, EtlRecord } from "./schema";
 
-export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir: string, hideProgress: boolean }) {
+export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir: string, hideProgress: boolean; }) {
 
   const { db, dry, tmpDir, hideProgress } = options;
 
@@ -27,10 +27,10 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
   const tables = await db("pg_catalog.pg_tables")
     .select("tablename")
     .where({ "schemaname": "src_monitor" })
-    .then((result: { tablename: string }[]) => result.map(row => row.tablename));
+    .then((result: { tablename: string; }[]) => result.map(row => row.tablename));
 
   const etags = (await db<EtlRecord>("src_monitor.etl"))
-    .reduce((acc, cur) => (acc[cur.name] = cur.etag, acc), {} as { [file: string]: string });
+    .reduce((acc, cur) => (acc[cur.name] = cur.etag, acc), {} as { [file: string]: string; });
 
 
   for (let file of importFiles) {
@@ -56,7 +56,7 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
     }
     catch (err) {
       if (err.statusCode === 404) console.log("Error: File not found.");
-      else console.log("Error: File could not be accessed.")
+      else console.log("Error: File could not be accessed.");
       continue;
     }
 
@@ -76,7 +76,7 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
     await writer.clear();
 
     let entries: any[] = [];
-    let entry: { [key: string]: string | null } = {};
+    let entry: { [key: string]: string | null; } = {};
 
     let c = 0;
 
@@ -119,7 +119,7 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
             if (datematch) entry[key] = `${datematch[3]}-${datematch[2]}-${datematch[1]}`;
           }
 
-        })
+        });
 
         entries.push(entry);
         entry = {};
@@ -136,7 +136,7 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
     const requestStream = request(filePath);
     requestStream.on('error', err => { throw err; });
 
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
 
       console.log("Parsing XML...");
 
@@ -145,8 +145,8 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
       parser.on("finish", () => {
         process.stdout.write(`Parsed ${entries.length} records            \r\n`);
         resolve();
-      })
-    })
+      });
+    });
 
     console.log("Importing to database");
     while (entries.length) {
@@ -156,11 +156,11 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
     await new Promise((resolve, reject) => writer.end(resolve));
 
     await db<EtlRecord>("src_monitor.etl").where({ name: file }).delete();
-    await db<EtlRecord>("src_monitor.etl").insert({ etag, name: file });
+    await db<EtlRecord>("src_monitor.etl").insert({ etag, name: file, modified: head["last-modified"], timestamp: (new Date()).toISOString() });
 
   }
 
-  console.log("Performing ANALYZE on all tables...")
+  console.log("Performing ANALYZE on all tables...");
 
   for (let table of tables) {
     await db.raw("ANALYZE ?", db.raw("src_monitor." + table));

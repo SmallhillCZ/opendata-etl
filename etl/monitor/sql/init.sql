@@ -3621,7 +3621,10 @@ COMMENT ON COLUMN src_monitor.vykzz.zu_hoscin IS 'Hospodářská činnost - minu
 
 CREATE TABLE src_monitor.etl (
     name character varying NOT NULL,
-    etag character varying
+    etag character varying,
+    modified date,
+    "timestamp" timestamp without time zone,
+    CONSTRAINT etl_pkey PRIMARY KEY (name)
 );
 
 

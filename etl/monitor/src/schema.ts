@@ -39,4 +39,6 @@ export interface MonitorResource {
 export interface EtlRecord {
   name: string;
   etag: string;
+  modified: string;
+  timestamp: string;
 }
