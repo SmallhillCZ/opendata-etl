@@ -1,0 +1,36 @@
+{
+  "name": "opendata-etl-ms2014",
+  "version": "1.0.0",
+  "description": "Script to download published opendata from Czech MS2014+ system",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "node dist/main.js",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/otevrena-data-mfcr/opendata-etl.git"
+  },
+  "keywords": [
+    "opendata",
+    "ms2014",
+    "czech"
+  ],
+  "author": "Martin Kopeček <martin.kopecek@mfcr.cz>",
+  "bugs": {
+    "url": "https://github.com/otevrena-data-mfcr/opendata-etl/issues"
+  },
+  "homepage": "https://github.com/otevrena-data-mfcr/opendata-etl#readme",
+  "devDependencies": {
+    "@types/node": "^15.0.2",
+    "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^9.0.0",
+    "knex": "^0.95.4",
+    "pg": "^8.6.0",
+    "saxes": "^4.0.2",
+    "saxes-stream": "^1.1.3"
+  }
+}
