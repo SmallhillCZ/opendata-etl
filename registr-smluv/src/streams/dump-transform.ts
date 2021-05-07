@@ -38,7 +38,8 @@ export class DumpTransform extends Transform {
   _transform(chunk: SaxesStreamChunk, encoding: string, callback: (err?: Error) => void) {
 
     let chunkPath = chunk.path;
-    chunkPath = chunkPath.replace(/^\.daily/, ".dump");
+    // only used for daily dumps - uncomment when daily dumps implemented later
+    // chunkPath = chunkPath.replace(/^\.daily/, ".dump");
 
     if (chunk.event === "text") {
       switch (chunkPath) {

@@ -9,7 +9,7 @@ export class IndexTransform extends Transform {
   dump: Partial<DumpMetadata> = {};
 
   constructor() {
-    super({ objectMode: true })
+    super({ objectMode: true });
   }
 
   _transform(chunk: SaxesStreamChunk, encoding: string, callback: (err?: Error) => void) {
@@ -18,6 +18,7 @@ export class IndexTransform extends Transform {
       switch (chunk.path) {
         case ".index.dump.dokoncenyMesic": this.dump["dokonceny_mesic"] = chunk.text === "1"; break; //boolean
         case ".index.dump.odkaz": this.dump["odkaz"] = chunk.text; break; //string
+        case ".index.dump.den": this.dump["den"] = Number(chunk.text); break; //number
         case ".index.dump.mesic": this.dump["mesic"] = Number(chunk.text); break; //number
         case ".index.dump.rok": this.dump["rok"] = Number(chunk.text); break; //number
         case ".index.dump.hashDumpu": this.dump["hash_dumpu"] = chunk.text; break; //string

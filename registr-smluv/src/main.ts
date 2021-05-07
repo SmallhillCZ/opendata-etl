@@ -49,9 +49,15 @@ import { DumpRecord, ContractRecord, CounterpartyRecord, AttachmentRecord } from
 
   for (let dump of dumps) {
 
-    console.log("= Dump:", dump.odkaz);
+    const dumpId = `${dump.rok}-${String(dump.mesic).padStart(2, "0")}${dump.den ? ("-" + String(dump.den).padStart(2, "0")) : ""}`;
 
-    const dumpId = `${dump.rok}-${String(dump.mesic).padStart(2, "0")}`;
+    console.log(`= Dump: ${dump.odkaz} (ID: ${dumpId})`);
+
+    // use only monthly dumps, continue od daily dumps
+    if (dump.den) {
+      console.log("Daily dump, skipping...");
+      continue;
+    }
 
     const oldDump = await db<DumpRecord>(`${schema}.etl`).where({ id_dumpu: dumpId }).first();
 

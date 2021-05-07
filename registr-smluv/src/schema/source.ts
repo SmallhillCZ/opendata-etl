@@ -1,6 +1,7 @@
 export interface DumpMetadata {
   dokonceny_mesic: boolean;
   odkaz: string;
+  den: number;
   mesic: number;
   rok: number;
   hash_dumpu: string;
