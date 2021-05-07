@@ -3,7 +3,7 @@ import { Knex } from "knex";
 import { SaxesStream } from "saxes-stream";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
-import { OVERWRITE, SCHEMA, TABLE_ETL, TABLE_PROJECTS } from "./const";
+import { OVERWRITE, TABLE_ETL, TABLE_PROJECTS } from "./const";
 import { DBWriter } from "./streams/db-writer";
 import { ProjectTransform } from "./streams/project-transform";
 
@@ -13,7 +13,7 @@ export async function ImportProjects(db: Knex) {
 
   const url = "https://ms14opendata.mssf.cz/SeznamProjektu.xml";
 
-  const oldEtl = await db<ETLRecord>(`${SCHEMA}.etl`).where({ url }).first();
+  const oldEtl = await db<ETLRecord>(TABLE_ETL).where({ url }).first();
 
 
   const head = await axios.head(url);

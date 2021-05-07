@@ -1,21 +1,12 @@
 import Knex from "knex";
-import { DB_CLIENT, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD } from "./const";
+import { DB_CLIENT, DB_HOST, DB_NAME, DB_PASSWORD, DB_USER } from "./const";
 import { ImportProjects } from "./importProjects";
-import { ProjectTransform } from "./streams/project-transform";
 
 
 
 (async function () {
 
   console.log("= Initialization");
-
-  var errors = false;
-
-  /* CONFIG */
-  const schema = process.env["DB_SCHEMA"] || "PUBLIC";
-
-  const dry = process.env["DRY"] ? !!JSON.parse(process.env["DRY"]) : false;
-  const hideProgress = process.env["HIDE_PROGRESS"] ? !!JSON.parse(process.env["HIDE_PROGRESS"]) : false;
 
   /* DATABASE */
   const db = Knex({
