@@ -133,20 +133,27 @@ export async function ImportCodelists(options: { db: Knex, dry: boolean, tmpDir:
       }
     });
 
-    const requestStream = request(filePath);
-    requestStream.on('error', err => { throw err; });
+    try {
 
-    await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
 
-      console.log("Parsing XML...");
+        const requestStream = request(filePath);
+        requestStream.on('error', err => { throw err; });
 
-      requestStream.pipe(parser);
+        console.log("Parsing XML...");
 
-      parser.on("finish", () => {
-        process.stdout.write(`Parsed ${entries.length} records            \r\n`);
-        resolve();
+        requestStream.pipe(parser);
+
+        parser.on("finish", () => {
+          process.stdout.write(`Parsed ${entries.length} records            \r\n`);
+          resolve();
+        });
       });
-    });
+
+    }
+    catch (err) {
+      console.log("Error:", err.message);
+    }
 
     console.log("Importing to database");
     while (entries.length) {
